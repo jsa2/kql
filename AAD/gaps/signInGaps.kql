@@ -1,0 +1,33 @@
+// If needed remember to exclude CA policies with Session Controls
+let dateInDays = 1d;
+let mass = materialize (SigninLogs 
+| where ResultType == 0
+| where tostring(AuthenticationDetails) !has "First factor requirement satisfied by claim in the token"
+| where NetworkLocationDetails !has "trustedNamedLocation"
+| where ConditionalAccessStatus == "success"
+| where Status.additionalDetails != "MFA requirement satisfied by claim in the token" and Status.additionalDetails != "MFA requirement skipped due to remembered device" and Status.additionalDetails != "MFA completed in Azure AD"
+| where AuthenticationRequirement has "singleFactorAuthentication"
+| where TimeGenerated > now() - dateInDays);
+let mass2 = mass
+| extend identifier = iff(isempty(DeviceDetail.browser), UserAgent, DeviceDetail.operatingSystem)
+| extend trueId = case(identifier contains "ios", "ios", identifier contains "Android", "Android", identifier);
+let rs = materialize(mass2
+| extend ID = strcat(trueId, '-',AppDisplayName)
+| extend CaDetail = ConditionalAccessPolicies
+|mv-expand CaDetail);
+let stage2 = rs
+| summarize correlation = make_set(strcat(CaDetail.result, '-',CorrelationId), 5) by ID, ClientAppUsed;
+let stage3 = rs
+| extend pols = strcat(CaDetail.result, "-",CaDetail.displayName, "-", CaDetail.enforcedGrantControls)
+| summarize make_set(pols) by ID;
+let stage4 =  rs
+| summarize make_set(UserDisplayName) by ID
+| extend usersCount = array_length(set_UserDisplayName)
+| project-away set_UserDisplayName;
+ stage2 
+| join kind=inner  stage3 on ID
+| project ID, correlation, set_pols
+| join kind=innerunique  stage4 on ID
+| project ID, usersCount, correlation, set_pols
+| extend fullBypass = case(tostring(set_pols) has "Success","False",tostring(set_pols) has "Failed", "False", "True")
+//

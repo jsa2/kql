@@ -1,0 +1,9 @@
+// You can use this query to figure out all tables that have AppIds
+
+// different Unions 
+union  A* | where * has "SomeRealAppId"
+union  S*,A* | where * has "Oauth"
+| distinct Type
+
+union  S*,A* | where * has "authorization"
+| distinct Type

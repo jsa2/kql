@@ -1,0 +1,12 @@
+let mass = materialize (union AADNonInteractiveUserSignInLogs, SigninLogs  
+| where TimeGenerated > now()-90d
+| extend Status = iff(isempty( Status_dynamic), parse_json(Status_string), Status_dynamic)
+| project AppDisplayName, ConditionalAccessStatus, TimeGenerated, ClientAppUsed, UserAgent,Status
+| where isnotempty( ClientAppUsed)
+| where Status.additionalDetails != "MFA requirement satisfied by claim in the token" and Status.additionalDetails != "MFA requirement skipped due to remembered device" and Status.additionalDetails != "MFA completed in Azure AD");
+mass
+| extend filterResult = case("Total" == "Total", "", "Total" == "Success", "success", "Total" == "Failure", "failure", "notApplied")
+| where ConditionalAccessStatus has filterResult
+| summarize make_set(ConditionalAccessStatus) by AppDisplayName, ClientAppUsed, tostring(Status.additionalDetails)
+| extend results = array_length(set_ConditionalAccessStatus)
+| where results == 1 and set_ConditionalAccessStatus has "notApplied"

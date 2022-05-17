@@ -1,0 +1,13 @@
+Resetting main repo
+
+## Create temp
+git checkout --orphan temp
+
+## Delete locally old main (or master)
+git branch -D main 
+
+## Rename the temp repo to main
+git branch -m main
+
+## force push the new main
+git push --set-upstream origin

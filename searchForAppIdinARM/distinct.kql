@@ -1,0 +1,10 @@
+let s = union AADServicePrincipalSignInLogs, AADManagedIdentitySignInLogs
+| distinct AppId, ServicePrincipalName;
+let massList = s | summarize make_list(AppId);
+union AzureDiagnostics, AzureActivity
+| extend mass = pack_all(true)
+| mv-apply appId = toscalar(massList) to typeof(string) on (where mass contains appId  )
+| extend combOp = iff(isempty( OperationNameValue), OperationName, OperationNameValue)
+| extend combCategory = iff(isempty( Category), CategoryValue, Category)
+| join kind=inner s on $left.appId == $right.AppId
+| distinct  ServicePrincipalName,appId, Type, combOp, combCategory
