@@ -1,0 +1,9 @@
+//Inspired by @reprise_99 queries //
+union SigninLogs, AADNonInteractiveUserSignInLogs
+| where TimeGenerated > ago(90d)
+| summarize
+    ['Device']=make_set(iff(isnotempty(ClientAppUsed), ClientAppUsed, UserAgent)),
+    ['IP']=make_set(IPAddress),
+    ['Users']=array_length(make_set(UserPrincipalName))
+    by AppDisplayName
+
