@@ -1,0 +1,11 @@
+//
+SigninLogs
+| where TimeGenerated > now() - 7d
+| where RiskLevelAggregated != "none" 
+| mv-expand parse_json(RiskEventTypes_V2)
+| summarize ['Events'] = make_set(RiskEventTypes_V2),
+            ['CorrelationId'] = make_set(CorrelationId, 3),
+            ['userAgent'] = make_set(ClientAppUsed, 3),
+            ['UserCoutn'] = dcount(UserPrincipalName)  
+            by AppDisplayName, RiskLevelAggregated
+// rsk
