@@ -6,6 +6,6 @@ SigninLogs
 | summarize ['Events'] = make_set(RiskEventTypes_V2),
             ['CorrelationId'] = make_set(CorrelationId, 3),
             ['userAgent'] = make_set(ClientAppUsed, 3),
-            ['UserCoutn'] = dcount(UserPrincipalName)  
+            ['UserCount'] = dcount(UserPrincipalName)  
             by AppDisplayName, RiskLevelAggregated
 // rsk
