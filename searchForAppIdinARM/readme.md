@@ -10,9 +10,9 @@ Value for AppId in Key Vault logs is ``identity_claim_appid_g``, whereas in Acti
 2. Searches with mv-apply from "mass" of ``pack_all()``
 
 
-## SPN and Azure Resource Manager Correlation for possible misuse of access token
+## Azure AD ServicePrincipal and Azure Resource Manager Correlation for possible misuse of access token within 70 minutes timeframe 
 
-This check will show a use case where Access Token is used from **different** IP address, than it was claimed by the Client Credentials flow. While there are legitimate use cases where the IP address changes from the token, it is also flag for stolen, or misuse of the access token.
+This check will list a use cases where Access Token is used from **different** IP address - vs than it was claimed with Client Credentials flow. While there are legitimate use cases where the IP address changes from the token, it is also flag for stolen, or misuse of the access token.
 - One likely false positive is scenario where there are two back-ends using the same client credentials, or some sort of load-balancing. These could likely be evened out in the query as further IP matching
 
 ### Logic
