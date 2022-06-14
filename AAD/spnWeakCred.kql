@@ -1,0 +1,4 @@
+// Checks based on servicePrincipal sign-in logs if credential type is configured according to best practices
+AADServicePrincipalSignInLogs
+| extend strongAuth = iff(isnotempty( ServicePrincipalCredentialThumbprint), "true - uses certificate credential", "false - uses password")
+| summarize count() by strongAuth, ServicePrincipalName
