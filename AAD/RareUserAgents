@@ -1,4 +1,4 @@
-let typicalLoc = "FI"
+let typicalLoc = "FI";
 union AADNonInteractiveUserSignInLogs, SigninLogs
 | where Location !has typicalLoc
 | where UserAgent !has "Mozilla" and UserAgent !has "iphone" and UserAgent !has "ipad"
