@@ -1,0 +1,12 @@
+let typicalLoc = "FI"
+union AADNonInteractiveUserSignInLogs, SigninLogs
+| where Location !has typicalLoc
+| where UserAgent !has "Mozilla" and UserAgent !has "iphone" and UserAgent !has "ipad"
+| where TimeGenerated > now()-60d
+| where ResultType == 0
+ | summarize
+    ['UaCount']=count(),
+    ['client'] = make_set(ClientAppUsed),
+      ['location'] = make_set(Location),
+    ['appD'] = make_set(AppDisplayName) by UserAgent
+| where UaCount < 100
