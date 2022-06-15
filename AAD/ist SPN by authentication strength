@@ -1,0 +1,7 @@
+AADServicePrincipalSignInLogs
+| where TimeGenerated > now()-90d
+| where ResultType == 0
+|  extend strongAuth = iff(isnotempty( ServicePrincipalCredentialThumbprint), "true - uses certificate credential", "false - uses password")
+ | summarize
+    ['Resource']=make_set(ResourceDisplayName),
+    ['strongAuth']=make_set(strongAuth) by ServicePrincipalName
