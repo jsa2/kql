@@ -4,13 +4,12 @@ let mass = materialize (SigninLogs
 | where ConditionalAccessStatus == "success"
 | where Status.additionalDetails != "MFA requirement satisfied by claim in the token" and Status.additionalDetails != "MFA requirement skipped due to remembered device" and Status.additionalDetails != "MFA completed in Azure AD"
 | where AuthenticationRequirement has "singleFactorAuthentication"
-| where TimeGenerated > now()-7d);
+| where TimeGenerated > now()-90d);
 let mass2 = mass
 | extend identifier = iff(isempty(DeviceDetail.browser), UserAgent, DeviceDetail.operatingSystem)
-| extend trueId = case(identifier contains "ios", "ios", identifier contains "Android", "Android", "other")
-| where trueId != "other";
+| extend trueId = case(identifier contains "ios", "ios", identifier contains "Android", "Android", "other");
 let rs = materialize(mass2
-| extend ID = strcat(ClientAppUsed, '.', trueId, '-',AppDisplayName)
+| extend ID = strcat(trueId, '-',AppDisplayName)
 | extend CaDetail = ConditionalAccessPolicies
 |mv-expand CaDetail);
 let stage2 = rs
