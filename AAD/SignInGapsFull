@@ -30,5 +30,5 @@ let stage4 =  rs
 | project ID, correlation, set_pols
 | join kind=innerunique  stage4 on ID
 | project ID, usersCount, correlation, set_pols
-| extend fullBypass = iff(tostring(set_pols) contains "Success", "false","True")
+| extend fullBypass = case(tostring(set_pols) has "failure", "false", tostring(set_pols) has "success", "false", "true")
 //
