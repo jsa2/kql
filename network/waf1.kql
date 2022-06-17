@@ -1,0 +1,8 @@
+
+AzureDiagnostics
+| where ResourceType == "APPLICATIONGATEWAYS" and OperationName == "ApplicationGatewayFirewall"
+| where action_s == "Matched"
+| extend details = strcat(policyScope_s, '-', ruleId_s, '-', Message)
+| summarize ['scope'] = make_set(requestUri_s),
+['msg'] = make_set(details_message_s) by ['details']
+| extend scopeSize = array_length(scope)
