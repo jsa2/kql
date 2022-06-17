@@ -1,0 +1,17 @@
+
+union AADNonInteractiveUserSignInLogs, SigninLogs 
+| extend StatusNonInteractive = parse_json(Status_string) 
+| extend StatusInteractive = Status_dynamic
+| extend errorCodeInterActive = toint(StatusInteractive.errorCode)
+| extend errorCodeNonInterActive = toint(StatusNonInteractive.errorCode)
+| extend SigninStatus = case(
+errorCodeNonInterActive == 0, "Success",
+errorCodeInterActive != 0, "Failure",      
+isempty(errorCodeNonInterActive), "Success","Failure"
+) 
+| extend ClientAppUsed = iff(isempty(ClientAppUsed) == true, "Unknown", ClientAppUsed)  
+| extend isLegacyAuth = case(ClientAppUsed contains "Browser", "No", ClientAppUsed contains "Mobile Apps and Desktop clients", "No", ClientAppUsed contains "Exchange ActiveSync", "Yes", ClientAppUsed contains "Unknown", "Unknown", "Yes") 
+| where isLegacyAuth == "Yes"
+| where TimeGenerated > now() -90d
+| summarize ['users'] = make_set(UserDisplayName, 10),
+['client'] = make_set(strcat(ClientAppUsed, '-', UserAgent)) by AppDisplayName
