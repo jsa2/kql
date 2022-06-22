@@ -1,0 +1,10 @@
+union AADNonInteractiveUserSignInLogs, SigninLogs 
+ | where TimeGenerated > now() -60d
+| where ResultType == 0
+| extend ClientAppUsed = iff(isempty(ClientAppUsed) == true, "Unknown", ClientAppUsed)  
+| extend isLegacyAuth = case(ClientAppUsed contains "Browser", "No", ClientAppUsed contains "Mobile Apps and Desktop clients", "No", ClientAppUsed contains "Exchange ActiveSync", "Yes", ClientAppUsed contains "Unknown", "Unknown", "Yes") 
+| where isLegacyAuth == "Yes"
+| extend combined = strcat(AppDisplayName, '-', ClientAppUsed, '-', UserAgent)
+| summarize ['combo'] =make_set(combined),
+['signintime'] = max(TimeGenerated)
+by UserDisplayName
