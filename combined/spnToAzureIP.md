@@ -3,8 +3,9 @@
 
 ✅ Maps Azure IP range & service to SPN signins counted per day
 
+
 ## 
-- Update download link from [Azure IP Ranges and Service Tags – Public Cloud](https://www.microsoft.com/en-us/download/details.aspx?id=56519)
+- Update download link from [Azure IP Ranges and Service Tags – Public Cloud](https://www.microsoft.com/en-us/download/details.aspx?id=56519) to url in ``externaldata()``
 - Inspired by similar sentinel query for tenant sign-ins ``Azure Portal Signin from another Azure Tenant`` 
 
 **Query**
@@ -33,3 +34,9 @@ extend matc = ipv4_is_in_range(tostring(spn.aadIp),tostring(prefix))
 | evaluate bag_unpack(spn)
 
 ```
+
+**Result preview**
+
+![](20220622135214.png)  
+
+**End**
