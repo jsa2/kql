@@ -7,6 +7,7 @@
 ## 
 - Update download link from [Azure IP Ranges and Service Tags – Public Cloud](https://www.microsoft.com/en-us/download/details.aspx?id=56519) to url in ``externaldata()``
 - Inspired by similar sentinel query for tenant sign-ins ``Azure Portal Signin from another Azure Tenant`` 
+- The use of evaluate bag_unpack() was heavily inspired by work of [Matthew Zorich](https://twitter.com/reprise_99)
 
 **Query**
 
