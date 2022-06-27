@@ -68,7 +68,9 @@ extend matc = ipv4_is_in_range(tostring(spn.aadIp),tostring(prefix))
 
 https://fn-azip-28667.azurewebsites.net/api/content/blob.json
 
-✅ - This is just a poc. So For any serious use, I would use similar function on timer, and make output binding of Azure Storage. The timer could follow then similar update cadence, as the MS hosted file.
+✅ - The function is based on following API https://docs.microsoft.com/en-us/rest/api/virtualnetwork/service-tags/list
+
+✅ - This is just a poc. So For any serious use, I would use similar function on timer, and make output binding of Azure Storage. The timer could follow then similar update cadence, as the MS hosted file (this is HTTP trigger, so it is updated on each request, if there are updates)
 
 ⚠️ - Do not use this function in any production environment 
 
