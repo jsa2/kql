@@ -40,4 +40,51 @@ extend matc = ipv4_is_in_range(tostring(spn.aadIp),tostring(prefix))
 
 ![](20220622135214.png)  
 
+## Automatic updates for 
+
+```js
+
+
+const { axiosClient } = require('../src/axioshelpers')
+const getToken = require('../src/token')
+
+module.exports = async function (context, req) {
+
+            var res = 'https://management.azure.com'
+
+            var token = await getToken(res).catch((error) => {
+                console.log(error)
+                return context.done()
+            })
+            try {
+                var data = await axiosClient({
+                    url: `https://management.azure.com/subscriptions/6c052e74-e3b3-401b-8734-fafc98c8cf83/providers/Microsoft.Network/locations/westeurope/serviceTags?api-version=2021-08-01`,
+                    method: "get",
+                    headers: {
+                        authorization: "Bearer " + token.access_token
+                    }
+                })
+
+                return context.res = {
+                    status: 200,
+                    /* Defaults to 200 */
+                    headers: {
+                        "content-type": "application/json"
+                    },
+                    body: data?.data
+                };
+
+            } catch (error) {
+                return context.res = {
+                    status: 404,
+                    /* Defaults to 200 */
+                    body: {
+                        err: error?.response?.data
+                    }
+                };
+
+            }
+}
+```
+
 **End**
