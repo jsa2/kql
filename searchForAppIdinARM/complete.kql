@@ -1,0 +1,24 @@
+let lookBack = 1d;
+let spns = AADServicePrincipalSignInLogs 
+| where TimeGenerated > ago(lookBack)
+| project authTime=TimeGenerated, AppId, ServicePrincipalName, aadIp = IPAddress
+| summarize  make_list(pack_all(true));
+let activityCor = union AzureActivity, AzureDiagnostics
+| extend mass = pack_all(true) 
+| where OperationNameValue !contains "MICROSOFT.AUTHORIZATION/POLICIES/AUDIT"
+| where TimeGenerated > ago(lookBack)
+| extend op = iff(isempty(OperationNameValue),OperationName,OperationNameValue)
+| extend activityTime = TimeGenerated;
+activityCor
+| mv-apply spn= toscalar(spns) to typeof(dynamic) on 
+    (
+    extend spnTime = spn.authTime
+    | extend isInRange =(datetime_diff('second',todatetime(activityTime),todatetime(spnTime)))
+    | extend ServicePrincipalName = spn.ServicePrincipalName
+    | extend spnIp = spn.aadIp
+    | where mass contains spn.AppId
+    | where isInRange between (0 .. 4200)
+    | where mass !contains spn.aadIp
+    )
+| extend altIP =iff(isempty(CallerIpAddress),CallerIPAddress, CallerIpAddress)
+| distinct  tostring(ServicePrincipalName), op, isInRange, altIP, tostring(spnIp), Type, tostring(mass)
