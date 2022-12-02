@@ -1,0 +1,22 @@
+
+//with clientinfo
+AzureDiagnostics
+| where TimeGenerated > now() -30d
+| summarize ['events'] = count(), ['Source']=make_set(strcat(clientInfo_s, '-', OperationName, ":", httpStatusCode_d),10) 
+by identity= iff(
+isnotempty(
+identity_claim_xms_mirid_s),identity_claim_xms_mirid_s, 
+iff(isnotempty( identity_claim_appid_g),identity_claim_appid_g,'not detected due to 401')
+)
+| top 10 by events
+
+//with IP
+AzureDiagnostics
+| where TimeGenerated > now() -30d
+| summarize ['events'] = count(), ['Source']=make_set(strcat(CallerIPAddress, '-', OperationName, ":", httpStatusCode_d),10) 
+by identity= iff(
+isnotempty(
+identity_claim_xms_mirid_s),identity_claim_xms_mirid_s, 
+iff(isnotempty( identity_claim_appid_g),identity_claim_appid_g,'not detected due to 401')
+)
+| top 10 by events
