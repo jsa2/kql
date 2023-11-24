@@ -1,0 +1,11 @@
+union SigninLogs, AADNonInteractiveUserSignInLogs, AzureActivity, MicrosoftGraphActivityLogs, AzureDiagnostics
+| project-away Scopes, Auth*, Conditional*, Duration*, ResponseSizeBytes, *Time*
+| extend prop = pack_all(true)
+| mv-apply prop on (
+ mv-expand kind = array prop
+| extend onlyVal=prop[1]
+| extend key = prop[0]
+)
+| distinct tostring(onlyVal), Type, tostring(key)
+| summarize make_set(key) by onlyVal
+| extend sharedKeys = array_length(set_key)
