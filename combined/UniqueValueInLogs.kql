@@ -9,3 +9,21 @@ union SigninLogs, AADNonInteractiveUserSignInLogs, AzureActivity, MicrosoftGraph
 | distinct tostring(onlyVal), Type, tostring(key)
 | summarize make_set(key) by onlyVal
 | extend sharedKeys = array_length(set_key)
+
+
+//
+//For checking all the IP's https://stackoverflow.com/questions/5284147/validating-ipv4-addresses-with-regexp
+// This is pretty heavy query so alternatively Filter with // | project-keep *Ip*, Type,*IP*, Message //if needed to somewhat limit the results
+// or filter with union and the log sources
+// Please note, that this will produce sometimes false positives, such software version names that can literally also be IP's, such as 
+search "*"
+| extend prop = pack_all(true)
+| mv-apply prop on (
+ mv-expand kind = array prop
+| extend onlyVal=prop[1]
+| extend LogKey = prop[0]
+| extend isIp = extract(@"^((25[0-5]|(2[0-4]|1\d|[1-9]|)\d)\.?\b){4}$", 0, tostring(onlyVal))
+| where isnotempty( isIp)
+)
+| summarize count(), make_set(strcat(LogKey, '-', Type)) by isIp
+
