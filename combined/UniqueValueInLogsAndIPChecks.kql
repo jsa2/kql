@@ -27,3 +27,14 @@ search "*"
 )
 | summarize count(), make_set(strcat(LogKey, '-', Type)) by isIp
 
+//
+
+let ranges =  dynamic(['10.0.0.0/8','172.16.0.0/12','192.168.0.0/16','100.64.0.0/10']);
+StorageBlobLogs
+| where TimeGenerated > now() -200d
+| distinct CallerIpAddress, OperationName, StatusCode
+| extend parsedIp = tostring(split(CallerIpAddress,':')[0])
+| extend isPrivate = ipv4_is_in_any_range(parsedIp, ranges)
+| where isPrivate == false
+| summarize count(), make_set(OperationName) by  parsedIp
+| extend location = geo_info_from_ip_address(parsedIp).country
