@@ -1,0 +1,19 @@
+//Detect Storage Account ListKeys actions for storageAccount that is tagged as CloudShell
+// Article about resource graph in Monitor https://techcommunity.microsoft.com/t5/azure-observability-blog/query-azure-resource-graph-from-azure-monitor/ba-p/3918298
+// Normalize ID to lowercase in "CloudShells"
+// Materialize and mv-apply is used since following simple join does not work in pipeline if it is preceeded by arg()
+let CloudShells = materialize (arg("").Resources
+    | where tostring(tags) has "cloud-shell"
+    | extend mass =bag_pack("id", tolower(id), "tags", tags)
+    | summarize make_list(mass)
+    );
+AzureActivity
+| where OperationNameValue == "MICROSOFT.STORAGE/STORAGEACCOUNTS/LISTKEYS/ACTION"
+| take 10
+| mv-apply cs = toscalar(CloudShells) to typeof(dynamic) on (
+    where cs.id == _ResourceId
+    )
+| project TimeGenerated, OperationNameValue, _ResourceId, cs.tags, Caller
+
+
+
