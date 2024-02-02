@@ -9,7 +9,6 @@ let CloudShells = materialize (arg("").Resources
     );
 AzureActivity
 | where OperationNameValue == "MICROSOFT.STORAGE/STORAGEACCOUNTS/LISTKEYS/ACTION"
-| take 10
 | mv-apply cs = toscalar(CloudShells) to typeof(dynamic) on (
     where cs.id == _ResourceId
     )
