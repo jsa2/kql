@@ -12,7 +12,7 @@ let s = union AADServicePrincipalSignInLogs, AADManagedIdentitySignInLogs
     | distinct AppId, ServicePrincipalName
     | summarize make_list(bag_pack('AppId', AppId, 'ServicePrincipalName', ServicePrincipalName));
 let src = union
-// Storage logs in azure very often log private IP addresses
+// Storage logs in azure very often log private IP addresses // remove the log sources from below you don't have available
         Storage*,
         AzureDiagnostics,
         (AzureActivity
