@@ -1,0 +1,29 @@
+let roughTravelSpeedPerHour = 500;
+union AADNonInteractiveUserSignInLogs, SigninLogs
+| where ResultType == 0
+| where TimeGenerated > ago(30d)
+| extend unifiedLocation = coalesce(tostring(LocationDetails_dynamic), LocationDetails_string)
+| extend TimeGenerated = bin(TimeGenerated, 1m)
+| extend unifiedLocation = parse_json(unifiedLocation).geoCoordinates
+| evaluate bag_unpack(unifiedLocation)
+| project UserPrincipalName, Location, TimeGenerated, latitude, longitude
+| distinct UserPrincipalName, TimeGenerated, latitude, longitude, Location
+| sort by UserPrincipalName asc, TimeGenerated asc
+| summarize events = make_list(pack_all(true)) by UserPrincipalName
+| extend forcedSorting = array_sort_asc(events)
+| mv-apply forcedSorting on (
+     serialize
+    | extend TimeGenerated = todatetime(forcedSorting.TimeGenerated), latitude = todouble(forcedSorting.latitude), longitude = todouble(forcedSorting.longitude), Location = tostring(forcedSorting.Location)
+    | extend previousTimeGenerated = prev(TimeGenerated, 1)
+    | extend differenceInHours = datetime_diff('hour', TimeGenerated, previousTimeGenerated)
+    | extend previousLatitude = prev(latitude, 1), previousLongitude = prev(longitude, 1)
+    | extend previousLocation = prev(Location)
+    // account jumps back
+    | extend secondPreviousLocation = prev(Location, 2)
+     | where Location != secondPreviousLocation
+       // don't account for events that have the same LAT/LONG and for the first event in the loop (it cannot have anything in prev() to compare)
+    | where previousLatitude != latitude and previousLongitude != longitude and isnotempty(previousTimeGenerated)
+    | extend geoDiffInKm = round(geo_distance_2points(previousLatitude, previousLongitude, latitude, longitude) / 1000, 2)
+    | extend allowedDiffInHours = round(geoDiffInKm / roughTravelSpeedPerHour, 2)
+) 
+| distinct UserPrincipalName, differenceInHours, previousLocation, Location, allowedDiffInHours, TimeGenerated, previousTimeGenerated
