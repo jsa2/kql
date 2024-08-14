@@ -21,9 +21,9 @@ union AADSignInEventsBeta, CloudAppEvents
     make_set(Application),  // Aggregate the distinct applications used in the session
     plainIP= make_set(IPAddress),  // Aggregate the distinct IP addresses associated with the session
     enrichedIP = make_set(bag_pack_columns(IPAddress, IPCategory, ISP)),  // Aggregate IP-related details without deduplication
-    sources = make_set(category)  // Aggregate the sources of the events (CloudAppEvents, AADSignInEventsBeta)
+    sources = make_set(category), // Aggregate the sources of the events (CloudAppEvents, AADSignInEventsBeta)
+    accountPropagation = make_set(bag_pack_columns(AccountDisplayName, AccountType, AuditSource)), // Aggregate account details into a set, capturing user info even when nested under service-level session tracking
+    actions = make_set_if( ActionType, isnotempty(ActionType))// o365 actions if any
 by session  // Group results by SessionId
 | extend session_duration_minutes = datetime_diff('minute', awayLate, awayEarl)
 | project-away *away* // Remove intermediate columns used for calculation
-
-
