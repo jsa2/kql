@@ -1,0 +1,29 @@
+// Retrieve all Session IDs from AADSignInEventsBeta where the SessionId is not empty
+let allLists = AADSignInEventsBeta
+| where isnotempty(SessionId)
+| summarize make_list(SessionId);
+// Combine AADSignInEventsBeta and CloudAppEvents datasets
+union AADSignInEventsBeta, CloudAppEvents 
+// Pack all columns into a dynamic object to allow for flexible filtering without knowing in which field the sessionId is propagated 
+| extend mass = pack_all(true)
+// Identify the source of each event by checking if ConditionalAccessPolicies is present
+| extend category = iff(isempty(ConditionalAccessPolicies), 'CloudAppEvents', 'AADSignInEventsBeta')
+// Search for each SessionId across all fields within the combined dataset
+| mv-apply session = toscalar(allLists) to typeof(string) on ( 
+    where mass has session
+)
+// Aggregate results by SessionId, capturing relevant details without deduplication within identified fields
+// Note: IPAddress, IPCategory, and ISP are stored together as nested objects without deduplication
+// This keeps the query simpler and avoids extra processing, but may result in redundant entries within the identified field
+| summarize 
+    awayEarl=min(Timestamp),
+    awayLate=max(Timestamp),
+    make_set(Application),  // Aggregate the distinct applications used in the session
+    plainIP= make_set(IPAddress),  // Aggregate the distinct IP addresses associated with the session
+    enrichedIP = make_set(bag_pack_columns(IPAddress, IPCategory, ISP)),  // Aggregate IP-related details without deduplication
+    sources = make_set(category)  // Aggregate the sources of the events (CloudAppEvents, AADSignInEventsBeta)
+by session  // Group results by SessionId
+| extend session_duration_minutes = datetime_diff('minute', awayLate, awayEarl)
+| project-away *away* // Remove intermediate columns used for calculation
+
+
