@@ -1,0 +1,27 @@
+// This version uses bit different but similar source union AADNonInteractiveUserSignInLogs, SigninLogs so there might be some deviation results
+let roughTravelSpeedPerHour = 500;
+AADSignInEventsBeta
+| where ErrorCode == 0
+| where Timestamp > ago(5h)
+| extend Timestamp = bin(Timestamp, 1m)
+| project AccountUpn, Country, Timestamp, Latitude, Longitude
+| distinct AccountUpn, Timestamp, Latitude, Longitude, Location=Country
+| sort by AccountUpn asc, Timestamp asc
+| summarize events = make_list(pack_all(true)) by AccountUpn
+| extend forcedSorting = array_sort_asc(events)
+| mv-apply forcedSorting on (
+     serialize
+    | extend Timestamp = todatetime(forcedSorting.Timestamp), Latitude = todouble(forcedSorting.Latitude), Longitude = todouble(forcedSorting.Longitude), Location = tostring(forcedSorting.Location)
+    | extend previousTimestamp = prev(Timestamp, 1)
+    | extend differenceInHours = datetime_diff('hour', Timestamp, previousTimestamp)
+    | extend previousLatitude = prev(Latitude, 1), previousLongitude = prev(Longitude, 1)
+    | extend previousLocation = prev(Location)
+    // account jumps back
+    | extend secondPreviousLocation = prev(Location, 2)
+     | where Location != secondPreviousLocation
+       // don't account for events that have the same LAT/LONG and for the first event in the loop (it cannot have anything in prev() to compare)
+    | where previousLatitude != Latitude and previousLongitude != Longitude and isnotempty(previousTimestamp)
+    | extend geoDiffInKm = round(geo_distance_2points(previousLatitude, previousLongitude, Latitude, Longitude) / 1000, 2)
+    | extend allowedDiffInHours = round(geoDiffInKm / roughTravelSpeedPerHour, 2)
+) 
+| distinct AccountUpn, differenceInHours, previousLocation, Location, allowedDiffInHours, Timestamp, previousTimestamp
